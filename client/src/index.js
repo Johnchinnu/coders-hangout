@@ -1,14 +1,16 @@
 // coders-hangout/client/src/index.js
 import React from 'react';
-import ReactDOM from 'react-dom/client'; // Import from 'react-dom/client' for React 18+
-import App from './App'; // Import the main App component
+import ReactDOM from 'react-dom/client';
+import App from './App';
+import { AuthProvider } from './context/AuthContext'; // Import AuthProvider
 
-// Get the root DOM element where the React app will be mounted
 const root = ReactDOM.createRoot(document.getElementById('root'));
 
-// Render the App component into the root element
+// Wrap the App component with AuthProvider
 root.render(
     <React.StrictMode>
-        <App />
+        <AuthProvider>
+            <App />
+        </AuthProvider>
     </React.StrictMode>
 );

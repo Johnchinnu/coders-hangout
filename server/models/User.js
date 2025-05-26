@@ -36,6 +36,19 @@ const UserSchema = new mongoose.Schema({
         type: Number,
         default: 0
     },
+    // New fields to track upvotes by this user
+    upvotedQuestions: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Question'
+        }
+    ],
+    upvotedAnswers: [
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Answer'
+        }
+    ],
     joinedDate: {
         type: Date,
         default: Date.now
