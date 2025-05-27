@@ -1,26 +1,18 @@
 // coders-hangout/server/server.js
 const express = require('express');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-const cors = require('cors');
+const mongoose = require('mongoose'); // Import mongoose
+const dotenv = require('dotenv'); // Import dotenv
+const cors = require('cors'); // Import cors middleware
+const path = require('path'); // Import path for serving static assets
 
 // Load environment variables from .env file FIRST
 dotenv.config();
 
-// --- DEBUGGING LINE (keep for now, remove later) ---
-console.log('JWT_SECRET loaded:', process.env.JWT_SECRET ? 'YES' : 'NO', process.env.JWT_SECRET);
-// --- END DEBUGGING LINE ---
-
-// Import routes
-const authRoutes = require('./routes/auth');
-const questionRoutes = require('./routes/questions'); // Import question routes
-
 const app = express();
-const PORT = process.env.PORT || 5000;
 
 // Middleware
-app.use(cors());
-app.use(express.json());
+app.use(cors()); // Enable CORS for all routes
+app.use(express.json({ extended: false })); // Allows us to get data in req.body
 
 // MongoDB Connection
 const mongoURI = process.env.MONGO_URI;
@@ -34,11 +26,24 @@ app.get('/', (req, res) => {
     res.send('Coders Hangout Backend API is running!');
 });
 
-// Use routes
-app.use('/api/auth', authRoutes); // Auth routes
-app.use('/api/questions', questionRoutes); // Q&A routes
+// Define Routes
+app.use('/api/auth', require('./routes/auth')); // Authentication routes
+app.use('/api/questions', require('./routes/questions')); // Q&A board routes
+app.use('/api/execute-code', require('./routes/executeCode')); // New: Code execution route
 
-// Start the server
+// For production, serve static assets
+// This block is typically used when deploying the backend to serve the frontend build
+if (process.env.NODE_ENV === 'production') {
+    // Set static folder
+    app.use(express.static('client/build'));
+
+    app.get('*', (req, res) => {
+        res.sendFile(path.resolve(__dirname, 'client', 'build', 'index.html'));
+    });
+}
+
+const PORT = process.env.PORT || 5000;
+
 app.listen(PORT, () => {
     console.log(`Server running on port ${PORT}`);
 });
