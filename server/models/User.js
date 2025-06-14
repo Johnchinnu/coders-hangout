@@ -23,20 +23,7 @@ const UserSchema = new mongoose.Schema({
         required: true,
         minlength: 6 // Minimum length for password
     },
-    // Optional fields for Coders Hangout features
-    xp: {
-        type: Number,
-        default: 0
-    },
-    questsCompleted: {
-        type: Number,
-        default: 0
-    },
-    streak: {
-        type: Number,
-        default: 0
-    },
-    // New fields to track upvotes by this user
+    // Existing fields to track upvotes by this user
     upvotedQuestions: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -49,6 +36,27 @@ const UserSchema = new mongoose.Schema({
             ref: 'Answer'
         }
     ],
+    // NEW: Fields for User Profile and Points System
+    points: { // For gamification/XP
+        type: Number,
+        default: 0
+    },
+    completedChallenges: [ // Store IDs of challenges user has completed
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Challenge'
+        }
+    ],
+    bio: { // User's personal description
+        type: String,
+        trim: true,
+        maxlength: 500, // Max length for bio
+        default: ''
+    },
+    profilePicture: { // URL to a profile picture (e.g., Gravatar, hosted image)
+        type: String,
+        default: 'https://placehold.co/150x150/cccccc/ffffff?text=User' // Default placeholder image
+    },
     joinedDate: {
         type: Date,
         default: Date.now

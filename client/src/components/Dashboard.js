@@ -4,12 +4,16 @@ import { useAuth } from '../context/AuthContext';
 import { QuestionList } from './QuestionList';
 import { AskQuestion } from './AskQuestion';
 import { QuestionDetail } from './QuestionDetail';
-import { CodeVisualizer } from './CodeVisualizer'; // Import the new component
+import { CodeVisualizer } from './CodeVisualizer';
+import { DailyQuestList } from './DailyQuestList';
+import { DailyQuestDetail } from './DailyQuestDetail';
+import { Profile } from './Profile'; // Import the new Profile component
 
 function Dashboard() {
     const { logout, message, isAuthenticated, authToken } = useAuth();
     const [activeTab, setActiveTab] = useState('questions');
     const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+    const [selectedChallengeId, setSelectedChallengeId] = useState(null);
     const [username, setUsername] = useState('Coder');
 
     // Function to decode JWT and get username
@@ -58,7 +62,24 @@ function Dashboard() {
 
     const handleBackToList = () => {
         setSelectedQuestionId(null);
+        setSelectedChallengeId(null); // Also clear challenge when navigating back
         setActiveTab('questions');
+    };
+
+    const handleViewChallenge = (id) => {
+        setSelectedChallengeId(id);
+        setActiveTab('challengeDetail');
+    };
+
+    const handleBackToChallengeList = () => {
+        setSelectedChallengeId(null);
+        setActiveTab('dailyQuests');
+    };
+
+    const handleViewProfile = () => {
+        setSelectedQuestionId(null);
+        setSelectedChallengeId(null);
+        setActiveTab('profile'); // New tab for profile
     };
 
     return (
@@ -89,6 +110,7 @@ function Dashboard() {
                     onClick={() => {
                         setActiveTab('questions');
                         setSelectedQuestionId(null);
+                        setSelectedChallengeId(null);
                     }}
                     className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
                         ${activeTab === 'questions' || activeTab === 'questionDetail'
@@ -99,7 +121,11 @@ function Dashboard() {
                     Q&A Board
                 </button>
                 <button
-                    onClick={() => setActiveTab('ask')}
+                    onClick={() => {
+                        setActiveTab('ask');
+                        setSelectedQuestionId(null);
+                        setSelectedChallengeId(null);
+                    }}
                     className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
                         ${activeTab === 'ask'
                             ? 'bg-blue-600 text-white shadow-lg'
@@ -111,7 +137,8 @@ function Dashboard() {
                 <button
                     onClick={() => {
                         setActiveTab('visualizer');
-                        setSelectedQuestionId(null); // Clear selected question when going to visualizer
+                        setSelectedQuestionId(null);
+                        setSelectedChallengeId(null);
                     }}
                     className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
                         ${activeTab === 'visualizer'
@@ -121,7 +148,30 @@ function Dashboard() {
                 >
                     Code Visualizer
                 </button>
-                {/* TODO: Add more tabs for Quests, Profile etc. later */}
+                <button
+                    onClick={() => {
+                        setActiveTab('dailyQuests');
+                        setSelectedQuestionId(null);
+                        setSelectedChallengeId(null);
+                    }}
+                    className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
+                        ${activeTab === 'dailyQuests' || activeTab === 'challengeDetail'
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-gray-200 text-blue-700 hover:bg-gray-300 shadow-md'
+                        }`}
+                >
+                    Daily Quests
+                </button>
+                <button
+                    onClick={handleViewProfile} // New handler for Profile tab
+                    className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
+                        ${activeTab === 'profile'
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-gray-200 text-blue-700 hover:bg-gray-300 shadow-md'
+                        }`}
+                >
+                    Profile
+                </button>
             </nav>
 
             {/* Main content area - now full width with padding */}
@@ -136,6 +186,11 @@ function Dashboard() {
                         <QuestionDetail questionId={selectedQuestionId} onBackToList={handleBackToList} />
                     )}
                     {activeTab === 'visualizer' && <CodeVisualizer />}
+                    {activeTab === 'dailyQuests' && <DailyQuestList onViewChallenge={handleViewChallenge} />}
+                    {activeTab === 'challengeDetail' && selectedChallengeId && (
+                        <DailyQuestDetail challengeId={selectedChallengeId} onBackToList={handleBackToChallengeList} />
+                    )}
+                    {activeTab === 'profile' && <Profile />} {/* Render Profile component */}
                 </div>
             </main>
 
