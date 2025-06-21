@@ -7,7 +7,8 @@ import { QuestionDetail } from './QuestionDetail';
 import { CodeVisualizer } from './CodeVisualizer';
 import { DailyQuestList } from './DailyQuestList';
 import { DailyQuestDetail } from './DailyQuestDetail';
-import { Profile } from './Profile'; // Import the new Profile component
+import { Profile } from './Profile';
+import { Chat } from './Chat'; // NEW: Import the Chat component
 
 function Dashboard() {
     const { logout, message, isAuthenticated, authToken } = useAuth();
@@ -62,7 +63,7 @@ function Dashboard() {
 
     const handleBackToList = () => {
         setSelectedQuestionId(null);
-        setSelectedChallengeId(null); // Also clear challenge when navigating back
+        setSelectedChallengeId(null);
         setActiveTab('questions');
     };
 
@@ -79,7 +80,13 @@ function Dashboard() {
     const handleViewProfile = () => {
         setSelectedQuestionId(null);
         setSelectedChallengeId(null);
-        setActiveTab('profile'); // New tab for profile
+        setActiveTab('profile');
+    };
+
+    const handleViewChat = () => { // Handler for Chat tab
+        setSelectedQuestionId(null);
+        setSelectedChallengeId(null);
+        setActiveTab('chat');
     };
 
     return (
@@ -163,7 +170,7 @@ function Dashboard() {
                     Daily Quests
                 </button>
                 <button
-                    onClick={handleViewProfile} // New handler for Profile tab
+                    onClick={handleViewProfile}
                     className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
                         ${activeTab === 'profile'
                             ? 'bg-blue-600 text-white shadow-lg'
@@ -171,6 +178,16 @@ function Dashboard() {
                         }`}
                 >
                     Profile
+                </button>
+                <button
+                    onClick={handleViewChat}
+                    className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
+                        ${activeTab === 'chat' // Corrected: This line was causing the syntax error
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-gray-200 text-blue-700 hover:bg-gray-300 shadow-md'
+                        }`}
+                >
+                    Global Chat
                 </button>
             </nav>
 
@@ -190,7 +207,8 @@ function Dashboard() {
                     {activeTab === 'challengeDetail' && selectedChallengeId && (
                         <DailyQuestDetail challengeId={selectedChallengeId} onBackToList={handleBackToChallengeList} />
                     )}
-                    {activeTab === 'profile' && <Profile />} {/* Render Profile component */}
+                    {activeTab === 'profile' && <Profile />}
+                    {activeTab === 'chat' && <Chat />}
                 </div>
             </main>
 

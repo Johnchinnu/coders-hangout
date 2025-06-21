@@ -6,11 +6,10 @@ const jwt = require('jsonwebtoken'); // For creating tokens
 const User = require('../models/User'); // Import the User model
 
 // Load JWT Secret from environment variables
-// Make sure to add JWT_SECRET to your .env file (e.g., JWT_SECRET="supersecretkey")
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
     console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
-    process.exit(1); // Exit the process if secret is not defined
+    process.exit(1);
 }
 
 /**
@@ -48,10 +47,11 @@ router.post('/register', async (req, res) => {
         // 5. Save user to database
         await user.save();
 
-        // 6. Create JWT payload
+        // 6. Create JWT payload - NEW: Include username in payload
         const payload = {
             user: {
-                id: user.id // Mongoose creates an _id field, which we can access as .id
+                id: user.id,
+                username: user.username // Add username to the payload
             }
         };
 
@@ -93,10 +93,11 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
 
-        // 3. Create JWT payload
+        // 3. Create JWT payload - NEW: Include username in payload
         const payload = {
             user: {
-                id: user.id
+                id: user.id,
+                username: user.username // Add username to the payload
             }
         };
 
