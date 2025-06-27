@@ -12,7 +12,7 @@ function CodeVisualizer() {
     const canvasRef = useRef(null); // Ref for the canvas element
     const animationFrameId = useRef(null); // To store requestAnimationFrame ID
     const [isVisualizing, setIsVisualizing] = useState(false); // State to control visualization
-    const [visualizationAlgorithm, setVisualizationAlgorithm] = useState('bubbleSort'); // New state for selected visualization algorithm
+    const [visualizationAlgorithm, setVisualizationAlgorithm] = useState('bubbleSort'); // State for selected visualization algorithm
 
     const EXECUTE_API_URL = 'http://localhost:5000/api/execute-code'; // Backend execution endpoint
 
@@ -106,7 +106,7 @@ function CodeVisualizer() {
     }, []);
 
     // Function to draw the array elements as bars
-    const drawArray = (ctx, arr, highlightIndices = [], swapIndices = [], pivotIndex = -1, sortedIndices = []) => {
+    const drawArray = (ctx, arr, highlightIndices = [], swapIndices = [], pivotIndex = -1, sortedIndices = [], comparingIndices = []) => {
         const canvas = canvasRef.current;
         if (!canvas) return;
 
@@ -126,7 +126,7 @@ function CodeVisualizer() {
             ctx.fillStyle = '#4299e1'; // Default bar color (blue-500)
 
             if (highlightIndices.includes(index)) {
-                ctx.fillStyle = '#f59e0b'; // Highlighted (orange-500)
+                ctx.fillStyle = '#f59e0b'; // Highlighted (orange-500) - e.g., current element being inserted
             }
             if (swapIndices.includes(index)) {
                 ctx.fillStyle = '#ef4444'; // Swapping (red-500)
@@ -137,6 +137,10 @@ function CodeVisualizer() {
             if (sortedIndices.includes(index)) {
                 ctx.fillStyle = '#65a30d'; // Sorted (lime-700)
             }
+            if (comparingIndices.includes(index)) {
+                ctx.fillStyle = '#8b5cf6'; // Comparing (purple-500) - specific for Insertion Sort comparison
+            }
+
 
             ctx.fillRect(x, y, barWidth - 2, barHeight); // -2 for slight gap between bars
 
@@ -170,12 +174,12 @@ function CodeVisualizer() {
         for (let i = 0; i < n - 1; i++) {
             for (let j = 0; j < n - 1 - i; j++) {
                 // Highlight elements being compared
-                drawArray(ctx, arr, [j, j + 1], [], -1, sortedIndices);
+                drawArray(ctx, arr, [], [], -1, sortedIndices, [j, j + 1]); // Using comparingIndices
                 await new Promise(resolve => setTimeout(resolve, 100)); // Short pause for comparison highlight
 
                 if (arr[j] > arr[j + 1]) {
                     // Highlight elements being swapped
-                    drawArray(ctx, arr, [], [j, j + 1], -1, sortedIndices);
+                    drawArray(ctx, arr, [], [j, j + 1], -1, sortedIndices); // Using swapIndices
                     await new Promise(resolve => setTimeout(resolve, 100)); // Short pause for swap highlight
 
                     // Swap elements
@@ -216,7 +220,7 @@ function CodeVisualizer() {
             await new Promise(resolve => setTimeout(resolve, 300));
 
             for (let j = low; j <= high - 1; j++) {
-                drawArray(ctx, arr, [i + 1, j], [], high, sortedIndices); // Highlight i+1 and j for comparison
+                drawArray(ctx, arr, [], [], high, sortedIndices, [i + 1, j]); // Highlight i+1 and j for comparison
                 await new Promise(resolve => setTimeout(resolve, 100));
 
                 if (arr[j] < pivot) {
@@ -266,6 +270,72 @@ function CodeVisualizer() {
         setIsVisualizing(false);
     };
 
+    // NEW: Insertion Sort Visualization Logic
+    const visualizeInsertionSort = async () => {
+        setIsVisualizing(true);
+        setOutput('Visualizing Insertion Sort...\n');
+        cancelAnimationFrame(animationFrameId.current);
+        setError(null);
+        setMessage(null);
+
+        let arr = [...initialArray];
+        const n = arr.length;
+        const ctx = canvasRef.current.getContext('2d');
+
+        const sortedIndices = []; // Elements that are already in their sorted sub-array
+
+        drawArray(ctx, arr);
+        await new Promise(resolve => setTimeout(resolve, 500)); // Initial pause
+
+        // First element is considered sorted
+        sortedIndices.push(0);
+        drawArray(ctx, arr, [], [], -1, sortedIndices);
+        await new Promise(resolve => setTimeout(resolve, 200));
+
+        for (let i = 1; i < n; i++) {
+            let key = arr[i]; // The element to be inserted
+            let j = i - 1;
+
+            // Highlight the 'key' element
+            drawArray(ctx, arr, [i], [], -1, sortedIndices);
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            // Move elements of arr[0..i-1], that are greater than key,
+            // to one position ahead of their current position
+            while (j >= 0 && arr[j] > key) {
+                // Highlight elements being compared (key vs arr[j])
+                drawArray(ctx, arr, [i], [], -1, sortedIndices, [j]);
+                await new Promise(resolve => setTimeout(resolve, 150));
+
+                arr[j + 1] = arr[j];
+                j = j - 1;
+                // Visualize the shift (element moving right)
+                drawArray(ctx, arr, [j + 1], [], -1, sortedIndices); // Highlight shifted element
+                await new Promise(resolve => setTimeout(resolve, 150));
+            }
+            arr[j + 1] = key; // Place the key in its correct position
+
+            // After inserting, update the sorted part and redraw
+            // No explicit 'sortedIndices.push(i)' needed in loop, as `j+1` takes care of position
+            // The first `i` elements form the sorted part.
+            sortedIndices.length = 0; // Clear and rebuild
+            for(let k = 0; k <= i; k++) {
+                sortedIndices.push(k);
+            }
+            drawArray(ctx, arr, [], [], -1, sortedIndices); // Redraw with the newly inserted element now part of sorted section
+            await new Promise(resolve => setTimeout(resolve, 200));
+        }
+
+        // After loop, all elements are sorted
+        sortedIndices.length = 0;
+        for(let k = 0; k < n; k++) {
+            sortedIndices.push(k);
+        }
+        drawArray(ctx, arr, [], [], -1, sortedIndices); // Final sorted state with all green
+        setOutput(prev => prev + '\nInsertion Sort Finished! Sorted Array: [' + arr.join(', ') + ']');
+        setIsVisualizing(false);
+    };
+
 
     // Function to initiate visualization based on selected algorithm
     const startVisualization = () => {
@@ -275,6 +345,8 @@ function CodeVisualizer() {
             visualizeBubbleSort();
         } else if (visualizationAlgorithm === 'quickSort') {
             visualizeQuickSort();
+        } else if (visualizationAlgorithm === 'insertionSort') { // NEW: Handle Insertion Sort
+            visualizeInsertionSort();
         }
         // Add more algorithms here
     };
@@ -316,6 +388,7 @@ function CodeVisualizer() {
                     >
                         <option value="bubbleSort">Bubble Sort</option>
                         <option value="quickSort">Quick Sort</option>
+                        <option value="insertionSort">Insertion Sort</option> {/* NEW: Insertion Sort option */}
                         {/* Add more visualization options here */}
                     </select>
                 </div>
@@ -345,7 +418,11 @@ function CodeVisualizer() {
                     className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
                     disabled={isVisualizing || isExecuting}
                 >
-                    {isVisualizing ? 'Visualizing...' : `Visualize ${visualizationAlgorithm === 'bubbleSort' ? 'Bubble Sort' : 'Quick Sort'}`}
+                    {isVisualizing ? 'Visualizing...' : `Visualize ${
+                        visualizationAlgorithm === 'bubbleSort' ? 'Bubble Sort' :
+                        visualizationAlgorithm === 'quickSort' ? 'Quick Sort' :
+                        'Insertion Sort' // Dynamic text for the button
+                    }`}
                 </button>
             </div>
 
