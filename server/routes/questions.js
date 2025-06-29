@@ -39,12 +39,32 @@ router.post('/', auth, async (req, res) => {
 
 /**
  * @route   GET /api/questions
- * @desc    Get all questions
+ * @desc    Get all questions with optional search and filter
  * @access  Public
+ * @query   search (string): Search query for title/description
+ * @query   tags (string): Comma-separated tags for filtering
  */
 router.get('/', async (req, res) => {
     try {
-        const questions = await Question.find()
+        const { search, tags } = req.query; // Extract query parameters
+        let query = {};
+
+        // Search by title or description (case-insensitive regex)
+        if (search) {
+            query.$or = [
+                { title: { $regex: search, $options: 'i' } },
+                { description: { $regex: search, $options: 'i' } }
+            ];
+        }
+
+        // Filter by tags
+        if (tags) {
+            const tagsArray = tags.split(',').map(tag => tag.trim());
+            // Use $in to find documents where the 'tags' array contains any of the provided tags
+            query.tags = { $in: tagsArray.map(tag => new RegExp(tag, 'i')) }; // Case-insensitive tag search
+        }
+
+        const questions = await Question.find(query)
                                       .sort({ createdAt: -1 }) // Sort by newest first
                                       .select('-__v') // Exclude __v field
                                       .populate('author', 'username'); // Populate author with username
@@ -133,93 +153,6 @@ router.post('/:id/answers', auth, async (req, res) => {
     }
 });
 
-/**
- * @route   PUT /api/questions/upvote/:id
- * @desc    Upvote a question
- * @access  Private
- */
-router.put('/upvote/:id', auth, async (req, res) => {
-    try {
-        const question = await Question.findById(req.params.id);
-        const user = await User.findById(req.user.id);
-
-        if (!question) {
-            return res.status(404).json({ msg: 'Question not found' });
-        }
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-
-        // Check if the user has already upvoted this question
-        if (question.upvotedBy.includes(req.user.id)) {
-            return res.status(400).json({ msg: 'Question already upvoted by this user' });
-        }
-
-        // Add user to upvotedBy array and increment upvotes
-        question.upvotedBy.unshift(req.user.id);
-        question.upvotes += 1;
-
-        // Add question to user's upvotedQuestions array
-        user.upvotedQuestions.unshift(question.id);
-
-        await question.save();
-        await user.save();
-
-        res.json({ msg: 'Question upvoted successfully', upvotes: question.upvotes });
-
-    } catch (err) {
-        console.error(err.message);
-        if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Question or User not found (Invalid ID)' });
-        }
-        res.status(500).send('Server Error');
-    }
-});
-
-/**
- * @route   PUT /api/questions/answers/upvote/:id
- * @desc    Upvote an answer
- * @access  Private
- */
-router.put('/answers/upvote/:id', auth, async (req, res) => {
-    try {
-        const answer = await Answer.findById(req.params.id);
-        const user = await User.findById(req.user.id);
-
-        if (!answer) {
-            return res.status(404).json({ msg: 'Answer not found' });
-        }
-        if (!user) {
-            return res.status(404).json({ msg: 'User not found' });
-        }
-
-        // Check if the user has already upvoted this answer
-        if (answer.upvotedBy.includes(req.user.id)) {
-            return res.status(400).json({ msg: 'Answer already upvoted by this user' });
-        }
-
-        // Add user to upvotedBy array and increment upvotes
-        answer.upvotedBy.unshift(req.user.id);
-        answer.upvotes += 1;
-
-        // Add answer to user's upvotedAnswers array
-        user.upvotedAnswers.unshift(answer.id);
-
-        await answer.save();
-        await user.save();
-
-        res.json({ msg: 'Answer upvoted successfully', upvotes: answer.upvotes });
-
-    } catch (err) {
-        console.error(err.message);
-        if (err.kind === 'ObjectId') {
-            return res.status(404).json({ msg: 'Answer or User not found (Invalid ID)' });
-        }
-        res.status(500).send('Server Error');
-    }
-});
-
-
-// TODO: Implement routes for Downvoting, Editing/Deleting Questions/Answers
+// TODO: Implement routes for Upvoting/Downvoting, Editing/Deleting Questions/Answers
 
 module.exports = router;

@@ -1,25 +1,43 @@
 // coders-hangout/client/src/components/QuestionList.js
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
 import { useAuth } from '../context/AuthContext';
 
-// QuestionList now accepts a prop to handle viewing a specific question
 function QuestionList({ onViewQuestion }) {
-    const { authToken, setError, setMessage, isAuthenticated } = useAuth(); // Added isAuthenticated
+    const { authToken, setError, setMessage } = useAuth();
     const [questions, setQuestions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
 
-    const API_URL = 'http://localhost:5000/api/questions';
+    // New states for search and filter
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterTags, setFilterTags] = useState(''); // Comma-separated string of tags
 
-    // Function to fetch questions
-    const fetchQuestions = async () => {
+    const API_BASE_URL = 'http://localhost:5000/api/questions';
+
+    // useCallback to memoize the fetchQuestions function to avoid unnecessary re-renders
+    // and infinite loops in useEffect. It now takes search and tags as arguments.
+    const fetchQuestions = useCallback(async (search = '', tags = '') => {
         setLoading(true);
         setFetchError(null);
         setError(null); // Clear global auth error
         setMessage(null); // Clear global auth message
 
+        let url = API_BASE_URL;
+        const queryParams = [];
+
+        if (search) {
+            queryParams.push(`search=${encodeURIComponent(search)}`);
+        }
+        if (tags) {
+            queryParams.push(`tags=${encodeURIComponent(tags)}`);
+        }
+
+        if (queryParams.length > 0) {
+            url += `?${queryParams.join('&')}`;
+        }
+
         try {
-            const response = await fetch(API_URL, {
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -39,47 +57,18 @@ function QuestionList({ onViewQuestion }) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [setError, setMessage]); // Dependencies for useCallback
 
-    // Function to handle upvoting a question
-    const handleUpvoteQuestion = async (questionId) => {
-        if (!isAuthenticated) {
-            setError('You must be logged in to upvote.');
-            return;
-        }
-        setMessage(null); // Clear previous messages
-
-        try {
-            const response = await fetch(`${API_URL}/upvote/${questionId}`, {
-                method: 'PUT', // Use PUT for updates
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-auth-token': authToken, // Send the authentication token
-                },
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setMessage(data.msg);
-                // Optimistically update the upvote count or re-fetch questions
-                setQuestions(prevQuestions =>
-                    prevQuestions.map(q =>
-                        q._id === questionId ? { ...q, upvotes: data.upvotes } : q
-                    )
-                );
-            } else {
-                setError(data.msg || 'Failed to upvote question.');
-            }
-        } catch (err) {
-            console.error('Error upvoting question:', err);
-            setError('Network error or server is unreachable.');
-        }
-    };
-
+    // Initial fetch on component mount and when search/filter parameters change
     useEffect(() => {
-        fetchQuestions();
-    }, [authToken, setError, setMessage]); // Re-fetch if authToken changes (e.g., after login/logout)
+        fetchQuestions(searchTerm, filterTags);
+    }, [searchTerm, filterTags, fetchQuestions]); // Now depends on searchTerm, filterTags and fetchQuestions
+
+    const handleSearchAndFilter = (e) => {
+        e.preventDefault();
+        // The useEffect above will trigger automatically when searchTerm or filterTags change
+        // No explicit fetch call needed here, just update the states
+    };
 
     if (loading) {
         return (
@@ -102,9 +91,63 @@ function QuestionList({ onViewQuestion }) {
 
     return (
         <div className="p-4">
-            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Recent Questions</h2>
+            <h2 className="text-3xl font-bold text-gray-800 mb-6 text-center">Q&A Board</h2>
+
+            {/* Search and Filter Section */}
+            <div className="bg-gray-100 p-6 rounded-lg shadow-inner mb-6">
+                <form onSubmit={handleSearchAndFilter} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                    <div>
+                        <label htmlFor="search" className="block text-gray-700 text-sm font-bold mb-2">
+                            Search (Title/Description):
+                        </label>
+                        <input
+                            type="text"
+                            id="search"
+                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., react hooks, python error"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="filter-tags" className="block text-gray-700 text-sm font-bold mb-2">
+                            Filter by Tags (comma-separated):
+                        </label>
+                        <input
+                            type="text"
+                            id="filter-tags"
+                            className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="e.g., javascript, css"
+                            value={filterTags}
+                            onChange={(e) => setFilterTags(e.target.value)}
+                        />
+                    </div>
+                    <div className="md:col-span-2 flex justify-center mt-2">
+                        <button
+                            type="submit"
+                            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+                            disabled={loading}
+                        >
+                            Search & Filter
+                        </button>
+                         <button
+                            type="button" // Use type="button" to prevent form submission
+                            onClick={() => {
+                                setSearchTerm('');
+                                setFilterTags('');
+                                // The useEffect will re-fetch automatically
+                            }}
+                            className="ml-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
+                        >
+                            Clear Filters
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+
             {questions.length === 0 ? (
-                <p className="text-center text-gray-600 text-lg">No questions posted yet. Be the first to ask!</p>
+                <p className="text-center text-gray-600 text-lg">No questions found matching your criteria. Try adjusting your search/filters!</p>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {questions.map((question) => (
@@ -119,24 +162,12 @@ function QuestionList({ onViewQuestion }) {
                                 ))}
                             </div>
                             <div className="flex justify-between items-center text-gray-500 text-xs mt-4">
-                                <span>Asked by <span className="font-medium text-gray-700">{question.authorUsername}</span> on {new Date(question.createdAt).toLocaleDateString()}</span>
-                                <span>Views: {question.views}</span>
+                                <span>Asked by <span className="font-medium text-gray-700">{question.authorUsername}</span></span>
+                                <span>{new Date(question.createdAt).toLocaleDateString()}</span>
                             </div>
-                            {/* Upvote section */}
-                            <div className="flex items-center justify-between mt-4 border-t pt-3 border-gray-200">
-                                <span className="text-gray-700 font-bold text-lg flex items-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1 text-green-500" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-11a1 1 0 10-2 0v4a1 1 0 102 0V7zm-1-3a1 1 0 00-1 1v.01a1 1 0 002 0V5a1 1 0 00-1-1z" clipRule="evenodd" />
-                                    </svg>
-                                    {question.upvotes} Upvotes
-                                </span>
-                                <button
-                                    className="bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-full text-sm transition duration-200 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed"
-                                    onClick={() => handleUpvoteQuestion(question._id)}
-                                    disabled={!isAuthenticated} // Disable if not logged in
-                                >
-                                    Upvote
-                                </button>
+                            <div className="flex justify-between items-center text-gray-500 text-xs mt-2">
+                                <span>Answers: {question.answers.length}</span>
+                                <span>Views: {question.views}</span>
                             </div>
                             <button
                                 className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out"
