@@ -36,22 +36,42 @@ router.post('/', auth, async (req, res) => {
         res.status(201).json(challenge); // 201 Created
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        // FIXED: Ensure error response is always JSON
+        res.status(500).json({ msg: 'Server Error during challenge creation.', error: err.message });
     }
 });
 
 /**
  * @route   GET /api/challenges
- * @desc    Get all coding challenges
+ * @desc    Get all daily coding challenges with pagination
  * @access  Public
+ * @query   page (number): Page number (default 1)
+ * @query   limit (number): Number of challenges per page (default 10)
  */
 router.get('/', async (req, res) => {
     try {
-        const challenges = await Challenge.find().sort({ createdAt: -1 });
-        res.json(challenges);
+        const { page = 1, limit = 10 } = req.query; // Extract page and limit, set defaults
+        const skip = (parseInt(page) - 1) * parseInt(limit); // Calculate documents to skip
+
+        // Get total count of challenges (before pagination)
+        const totalChallenges = await Challenge.countDocuments();
+
+        const challenges = await Challenge.find()
+                                        .sort({ createdAt: -1 }) // Sort by newest first
+                                        .skip(skip) // Apply skip for pagination
+                                        .limit(parseInt(limit)) // Apply limit for pagination
+                                        .select('-__v'); // Exclude __v field
+
+        res.json({
+            challenges,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalChallenges / parseInt(limit)),
+            totalChallenges
+        });
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        // FIXED: Ensure error response is always JSON
+        res.status(500).json({ msg: 'Server Error fetching challenges.', error: err.message });
     }
 });
 
@@ -72,7 +92,8 @@ router.get('/:id', async (req, res) => {
         if (err.kind === 'ObjectId') {
             return res.status(404).json({ msg: 'Challenge not found (Invalid ID)' });
         }
-        res.status(500).send('Server Error');
+        // FIXED: Ensure error response is always JSON
+        res.status(500).json({ msg: 'Server Error fetching challenge details.', error: err.message });
     }
 });
 
@@ -175,7 +196,7 @@ public class ${className} {
             executionOutput = stdout;
             executionError = stderr;
         } catch (execErr) {
-            executionOutput = execErr.stdout; // Standard output even if there's an error
+            executionOutput = execErr.stdout;
             executionError = execErr.stderr || execErr.message;
             if (execErr.killed && execErr.signal === 'SIGTERM') {
                 executionError = `Execution timed out (${timeout / 1000} seconds limit). Possible infinite loop or long running code.`;
@@ -219,7 +240,8 @@ public class ${className} {
         if (err.kind === 'ObjectId') {
             return res.status(404).json({ msg: 'Challenge or User not found (Invalid ID)', success: false });
         }
-        res.status(500).send({ msg: 'Server Error during submission process.', error: err.message, success: false });
+        // FIXED: Ensure error response is always JSON
+        res.status(500).json({ msg: 'Server Error during submission process.', error: err.message, success: false });
     } finally {
         // Clean up all temporary files created during this request
         const filesToDelete = [tempFilePath, compiledFilePath, executablePath];

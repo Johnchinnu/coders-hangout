@@ -1,5 +1,5 @@
 // coders-hangout/client/src/components/QuestionList.js
-import React, { useEffect, useState, useCallback } from 'react'; // Import useCallback
+import React, { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 
 function QuestionList({ onViewQuestion }) {
@@ -8,19 +8,50 @@ function QuestionList({ onViewQuestion }) {
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
 
-    // New states for search and filter
+    // States for immediate input values (for debouncing)
     const [searchTerm, setSearchTerm] = useState('');
-    const [filterTags, setFilterTags] = useState(''); // Comma-separated string of tags
+    const [filterTags, setFilterTags] = useState('');
+
+    // States for debounced values, which will trigger the API fetch
+    const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+    const [debouncedFilterTags, setDebouncedFilterTags] = useState('');
+
+    // NEW: States for pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [questionsPerPage, setQuestionsPerPage] = useState(10); // Default items per page
 
     const API_BASE_URL = 'http://localhost:5000/api/questions';
 
-    // useCallback to memoize the fetchQuestions function to avoid unnecessary re-renders
-    // and infinite loops in useEffect. It now takes search and tags as arguments.
-    const fetchQuestions = useCallback(async (search = '', tags = '') => {
+    // Debounce effect for searchTerm
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedSearchTerm(searchTerm);
+        }, 500); // 500ms debounce delay
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchTerm]);
+
+    // Debounce effect for filterTags
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            setDebouncedFilterTags(filterTags);
+        }, 500); // 500ms debounce delay
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [filterTags]);
+
+
+    // Memoized fetchQuestions function, now depending on debounced values and pagination states
+    const fetchQuestions = useCallback(async (search = '', tags = '', page = 1, limit = 10) => {
         setLoading(true);
         setFetchError(null);
-        setError(null); // Clear global auth error
-        setMessage(null); // Clear global auth message
+        setError(null);
+        setMessage(null);
 
         let url = API_BASE_URL;
         const queryParams = [];
@@ -31,6 +62,9 @@ function QuestionList({ onViewQuestion }) {
         if (tags) {
             queryParams.push(`tags=${encodeURIComponent(tags)}`);
         }
+        // Add pagination parameters
+        queryParams.push(`page=${page}`);
+        queryParams.push(`limit=${limit}`);
 
         if (queryParams.length > 0) {
             url += `?${queryParams.join('&')}`;
@@ -47,7 +81,9 @@ function QuestionList({ onViewQuestion }) {
             const data = await response.json();
 
             if (response.ok) {
-                setQuestions(data);
+                setQuestions(data.questions); // Backend now returns an object with questions array
+                setCurrentPage(data.currentPage);
+                setTotalPages(data.totalPages);
             } else {
                 setFetchError(data.msg || 'Failed to fetch questions');
             }
@@ -57,17 +93,37 @@ function QuestionList({ onViewQuestion }) {
         } finally {
             setLoading(false);
         }
-    }, [setError, setMessage]); // Dependencies for useCallback
+    }, [setError, setMessage]);
 
-    // Initial fetch on component mount and when search/filter parameters change
+    // This useEffect will now trigger when debounced search/filter terms or pagination states change
     useEffect(() => {
-        fetchQuestions(searchTerm, filterTags);
-    }, [searchTerm, filterTags, fetchQuestions]); // Now depends on searchTerm, filterTags and fetchQuestions
+        fetchQuestions(debouncedSearchTerm, debouncedFilterTags, currentPage, questionsPerPage);
+    }, [debouncedSearchTerm, debouncedFilterTags, currentPage, questionsPerPage, fetchQuestions]);
+
 
     const handleSearchAndFilter = (e) => {
         e.preventDefault();
-        // The useEffect above will trigger automatically when searchTerm or filterTags change
-        // No explicit fetch call needed here, just update the states
+        // When the button is clicked, we explicitly update the debounced terms
+        // and reset to page 1 for a new search/filter operation.
+        setDebouncedSearchTerm(searchTerm);
+        setDebouncedFilterTags(filterTags);
+        setCurrentPage(1); // Reset to first page on new search/filter
+    };
+
+    const handlePageChange = (newPage) => {
+        if (newPage > 0 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+            // Scroll to top of list for better UX
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+    };
+
+    const handleClearFilters = () => {
+        setSearchTerm('');
+        setFilterTags('');
+        setDebouncedSearchTerm('');
+        setDebouncedFilterTags('');
+        setCurrentPage(1); // Reset to first page
     };
 
     if (loading) {
@@ -131,12 +187,8 @@ function QuestionList({ onViewQuestion }) {
                             Search & Filter
                         </button>
                          <button
-                            type="button" // Use type="button" to prevent form submission
-                            onClick={() => {
-                                setSearchTerm('');
-                                setFilterTags('');
-                                // The useEffect will re-fetch automatically
-                            }}
+                            type="button"
+                            onClick={handleClearFilters}
                             className="ml-4 bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg shadow-md transition duration-300 ease-in-out transform hover:scale-105"
                         >
                             Clear Filters
@@ -149,35 +201,58 @@ function QuestionList({ onViewQuestion }) {
             {questions.length === 0 ? (
                 <p className="text-center text-gray-600 text-lg">No questions found matching your criteria. Try adjusting your search/filters!</p>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {questions.map((question) => (
-                        <div key={question._id} className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200">
-                            <h3 className="text-xl font-semibold text-blue-700 mb-2">{question.title}</h3>
-                            <p className="text-gray-700 text-sm mb-3 line-clamp-3">{question.description}</p>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                                {question.tags.map((tag, index) => (
-                                    <span key={index} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-                                        {tag}
-                                    </span>
-                                ))}
+                <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {questions.map((question) => (
+                            <div key={question._id} className="bg-gray-50 p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 ease-in-out border border-gray-200">
+                                <h3 className="text-xl font-semibold text-blue-700 mb-2">{question.title}</h3>
+                                <p className="text-gray-700 text-sm mb-3 line-clamp-3">{question.description}</p>
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                    {question.tags.map((tag, index) => (
+                                        <span key={index} className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-xs mt-4">
+                                    <span>Asked by <span className="font-medium text-gray-700">{question.authorUsername}</span></span>
+                                    <span>{new Date(question.createdAt).toLocaleDateString()}</span>
+                                </div>
+                                <div className="flex justify-between items-center text-gray-500 text-xs mt-2">
+                                    <span>Answers: {question.answers.length}</span>
+                                    <span>Views: {question.views}</span>
+                                </div>
+                                <button
+                                    className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out"
+                                    onClick={() => onViewQuestion(question._id)}
+                                >
+                                    View Details
+                                </button>
                             </div>
-                            <div className="flex justify-between items-center text-gray-500 text-xs mt-4">
-                                <span>Asked by <span className="font-medium text-gray-700">{question.authorUsername}</span></span>
-                                <span>{new Date(question.createdAt).toLocaleDateString()}</span>
-                            </div>
-                            <div className="flex justify-between items-center text-gray-500 text-xs mt-2">
-                                <span>Answers: {question.answers.length}</span>
-                                <span>Views: {question.views}</span>
-                            </div>
-                            <button
-                                className="mt-4 w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition duration-200 ease-in-out"
-                                onClick={() => onViewQuestion(question._id)}
-                            >
-                                View Details
-                            </button>
-                        </div>
-                    ))}
-                </div>
+                        ))}
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex justify-center items-center space-x-4 mt-8">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1 || loading}
+                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l-lg disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                        >
+                            Previous
+                        </button>
+                        <span className="text-gray-700 font-semibold">
+                            Page {currentPage} of {totalPages}
+                        </span>
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages || loading}
+                            className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r-lg disabled:opacity-50 disabled:cursor-not-allowed transition duration-200"
+                        >
+                            Next
+                        </button>
+                    </div>
+                </>
             )}
         </div>
     );

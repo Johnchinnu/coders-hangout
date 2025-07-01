@@ -1,6 +1,6 @@
 // coders-hangout/server/routes/users.js
 const express = require('express');
-const router = express.Router();
+const router = express.Router(); // Corrected: Only one declaration for router
 const User = require('../models/User'); // Import User model
 const auth = require('../middleware/auth'); // Import auth middleware
 const bcrypt = require('bcryptjs'); // For password hashing (if updating password)
@@ -66,9 +66,6 @@ router.put('/profile', auth, async (req, res) => {
             { new: true, runValidators: true, select: '-password -__v' } // Return new doc, run schema validators, exclude password
         );
 
-        // Optionally, if username or email changes, you might want to re-issue JWT
-        // For simplicity, we're not doing that here unless specifically requested.
-
         res.json({ msg: 'Profile updated successfully', user });
 
     } catch (err) {
@@ -80,9 +77,23 @@ router.put('/profile', auth, async (req, res) => {
     }
 });
 
+/**
+ * @route   GET /api/users/leaderboard
+ * @desc    Get top users by points
+ * @access  Public
+ */
+router.get('/leaderboard', async (req, res) => {
+    try {
+        const leaderboard = await User.find()
+                                      .sort({ points: -1 }) // Sort by points in descending order
+                                      .limit(10) // Get top 10 users
+                                      .select('username points profilePicture completedChallenges -_id'); // Select only necessary fields
 
-// Note: The /api/users/register route for user creation is handled in auth.js.
-// This users.js is for getting/updating user-specific data.
-// In a real app, you might have separate routes for admin to manage all users.
+        res.json(leaderboard);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error');
+    }
+});
 
 module.exports = router;

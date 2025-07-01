@@ -12,8 +12,8 @@ function AskQuestion({ onQuestionPosted }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        setError(null);
-        setMessage(null);
+        setError(null); // Clear previous errors
+        setMessage(null); // Clear previous messages
 
         // Convert comma-separated tags string to an array
         const tagsArray = tags.split(',').map(tag => tag.trim()).filter(tag => tag.length > 0);
@@ -28,7 +28,7 @@ function AskQuestion({ onQuestionPosted }) {
                 body: JSON.stringify({ title, description, tags: tagsArray }),
             });
 
-            const data = await response.json();
+            const data = await response.json(); // Always attempt to parse JSON
 
             if (response.ok) {
                 setMessage('Question posted successfully!');
@@ -39,11 +39,26 @@ function AskQuestion({ onQuestionPosted }) {
                     onQuestionPosted(); // Callback to switch to questions list or refresh
                 }
             } else {
-                setError(data.msg || 'Failed to post question');
+                // NEW: Improved error handling
+                // Check if the error is a Mongoose validation error
+                if (data.msg && typeof data.msg === 'string' && data.msg.includes('validation failed')) {
+                    // Extract specific validation messages if available
+                    const validationErrors = Object.values(data.errors || {})
+                                                   .map(err => err.message)
+                                                   .join(', ');
+                    setError(`Validation Error: ${validationErrors || data.msg}`);
+                } else {
+                    setError(data.msg || 'Failed to post question. Please try again.');
+                }
             }
         } catch (err) {
             console.error('Error posting question:', err);
-            setError('Network error or server is unreachable.');
+            // Check if the error is due to JSON parsing (e.g., if backend sends plain text)
+            if (err instanceof SyntaxError && err.message.includes('JSON')) {
+                setError('Received non-JSON response from server. Backend error.');
+            } else {
+                setError('Network error or server is unreachable. Please check your backend.');
+            }
         }
     };
 
@@ -71,7 +86,7 @@ function AskQuestion({ onQuestionPosted }) {
                         type="text"
                         id="title"
                         className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out"
-                        placeholder="e.g., How to implement a binary search tree in Python?"
+                        placeholder="e.g., How to implement a binary search tree in Python? (Min 10 chars)"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                         required
@@ -84,7 +99,7 @@ function AskQuestion({ onQuestionPosted }) {
                     <textarea
                         id="description"
                         className="shadow appearance-none border rounded-lg w-full py-3 px-4 text-gray-700 leading-tight focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200 ease-in-out h-32 resize-y"
-                        placeholder="Provide detailed context, what you've tried, and any error messages."
+                        placeholder="Provide detailed context, what you've tried, and any error messages. (Min 20 chars)"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         required

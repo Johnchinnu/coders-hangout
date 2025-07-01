@@ -1,10 +1,10 @@
 // coders-hangout/server/routes/questions.js
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth'); // Import our auth middleware
+const auth = require('../middleware/auth');
 const Question = require('../models/Question');
 const Answer = require('../models/Answer');
-const User = require('../models/User'); // To fetch username for authorUsername
+const User = require('../models/User');
 
 /**
  * @route   POST /api/questions
@@ -15,7 +15,6 @@ router.post('/', auth, async (req, res) => {
     const { title, description, tags } = req.body;
 
     try {
-        // Get author's username from the database using req.user.id
         const user = await User.findById(req.user.id).select('username');
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
@@ -26,11 +25,11 @@ router.post('/', auth, async (req, res) => {
             description,
             tags: Array.isArray(tags) ? tags.map(tag => tag.trim()) : [],
             author: req.user.id,
-            authorUsername: user.username // Store username directly
+            authorUsername: user.username
         });
 
         const question = await newQuestion.save();
-        res.status(201).json(question); // 201 Created
+        res.status(201).json(question);
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -39,14 +38,18 @@ router.post('/', auth, async (req, res) => {
 
 /**
  * @route   GET /api/questions
- * @desc    Get all questions with optional search and filter
+ * @desc    Get all questions with optional search, filter, and pagination
  * @access  Public
  * @query   search (string): Search query for title/description
  * @query   tags (string): Comma-separated tags for filtering
+ * @query   page (number): Page number (default 1)
+ * @query   limit (number): Number of questions per page (default 10)
  */
 router.get('/', async (req, res) => {
     try {
-        const { search, tags } = req.query; // Extract query parameters
+        const { search, tags, page = 1, limit = 10 } = req.query; // Extract query parameters, set defaults
+        const skip = (parseInt(page) - 1) * parseInt(limit); // Calculate how many documents to skip
+
         let query = {};
 
         // Search by title or description (case-insensitive regex)
@@ -60,16 +63,25 @@ router.get('/', async (req, res) => {
         // Filter by tags
         if (tags) {
             const tagsArray = tags.split(',').map(tag => tag.trim());
-            // Use $in to find documents where the 'tags' array contains any of the provided tags
-            query.tags = { $in: tagsArray.map(tag => new RegExp(tag, 'i')) }; // Case-insensitive tag search
+            query.tags = { $in: tagsArray.map(tag => new RegExp(tag, 'i')) };
         }
 
-        const questions = await Question.find(query)
-                                      .sort({ createdAt: -1 }) // Sort by newest first
-                                      .select('-__v') // Exclude __v field
-                                      .populate('author', 'username'); // Populate author with username
+        // Get total count of questions matching the filters (before pagination)
+        const totalQuestions = await Question.countDocuments(query);
 
-        res.json(questions);
+        const questions = await Question.find(query)
+                                      .sort({ createdAt: -1 })
+                                      .skip(skip) // Apply skip for pagination
+                                      .limit(parseInt(limit)) // Apply limit for pagination
+                                      .select('-__v')
+                                      .populate('author', 'username');
+
+        res.json({
+            questions,
+            currentPage: parseInt(page),
+            totalPages: Math.ceil(totalQuestions / parseInt(limit)),
+            totalQuestions
+        });
     } catch (err) {
         console.error(err.message);
         res.status(500).send('Server Error');
@@ -84,10 +96,10 @@ router.get('/', async (req, res) => {
 router.get('/:id', async (req, res) => {
     try {
         const question = await Question.findById(req.params.id)
-                                      .populate('author', 'username') // Populate author
+                                      .populate('author', 'username')
                                       .populate({
                                           path: 'answers',
-                                          populate: { path: 'author', select: 'username' } // Populate answers' authors
+                                          populate: { path: 'author', select: 'username' }
                                       })
                                       .select('-__v');
 
@@ -95,14 +107,12 @@ router.get('/:id', async (req, res) => {
             return res.status(404).json({ msg: 'Question not found' });
         }
 
-        // Increment view count (optional, but good for Q&A)
         question.views += 1;
         await question.save();
 
         res.json(question);
     } catch (err) {
         console.error(err.message);
-        // Check for invalid ObjectId format
         if (err.kind === 'ObjectId') {
             return res.status(404).json({ msg: 'Question not found (Invalid ID)' });
         }
@@ -124,7 +134,6 @@ router.post('/:id/answers', auth, async (req, res) => {
             return res.status(404).json({ msg: 'Question not found' });
         }
 
-        // Get author's username
         const user = await User.findById(req.user.id).select('username');
         if (!user) {
             return res.status(404).json({ msg: 'User not found' });
@@ -139,11 +148,10 @@ router.post('/:id/answers', auth, async (req, res) => {
 
         const answer = await newAnswer.save();
 
-        // Add the answer's ID to the question's answers array
-        question.answers.unshift(answer.id); // Add to the beginning
+        question.answers.unshift(answer.id);
         await question.save();
 
-        res.status(201).json(answer); // 201 Created
+        res.status(201).json(answer);
     } catch (err) {
         console.error(err.message);
         if (err.kind === 'ObjectId') {
@@ -152,7 +160,5 @@ router.post('/:id/answers', auth, async (req, res) => {
         res.status(500).send('Server Error');
     }
 });
-
-// TODO: Implement routes for Upvoting/Downvoting, Editing/Deleting Questions/Answers
 
 module.exports = router;

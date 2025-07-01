@@ -8,7 +8,8 @@ import { CodeVisualizer } from './CodeVisualizer';
 import { DailyQuestList } from './DailyQuestList';
 import { DailyQuestDetail } from './DailyQuestDetail';
 import { Profile } from './Profile';
-import { Chat } from './Chat'; // NEW: Import the Chat component
+import { Chat } from './Chat';
+import { Leaderboard } from './Leaderboard'; // NEW: Import the Leaderboard component
 
 function Dashboard() {
     const { logout, message, isAuthenticated, authToken } = useAuth();
@@ -83,10 +84,16 @@ function Dashboard() {
         setActiveTab('profile');
     };
 
-    const handleViewChat = () => { // Handler for Chat tab
+    const handleViewChat = () => {
         setSelectedQuestionId(null);
         setSelectedChallengeId(null);
         setActiveTab('chat');
+    };
+
+    const handleViewLeaderboard = () => { // NEW: Handler for Leaderboard tab
+        setSelectedQuestionId(null);
+        setSelectedChallengeId(null);
+        setActiveTab('leaderboard');
     };
 
     return (
@@ -182,12 +189,22 @@ function Dashboard() {
                 <button
                     onClick={handleViewChat}
                     className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
-                        ${activeTab === 'chat' // Corrected: This line was causing the syntax error
+                        ${activeTab === 'chat'
                             ? 'bg-blue-600 text-white shadow-lg'
                             : 'bg-gray-200 text-blue-700 hover:bg-gray-300 shadow-md'
                         }`}
                 >
                     Global Chat
+                </button>
+                <button
+                    onClick={handleViewLeaderboard}
+                    className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
+                        ${activeTab === 'leaderboard'
+                            ? 'bg-blue-600 text-white shadow-lg'
+                            : 'bg-gray-200 text-blue-700 hover:bg-gray-300 shadow-md'
+                        }`}
+                >
+                    Leaderboard
                 </button>
             </nav>
 
@@ -209,6 +226,7 @@ function Dashboard() {
                     )}
                     {activeTab === 'profile' && <Profile />}
                     {activeTab === 'chat' && <Chat />}
+                    {activeTab === 'leaderboard' && <Leaderboard />}
                 </div>
             </main>
 
