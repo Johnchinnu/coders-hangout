@@ -9,16 +9,18 @@ import { DailyQuestList } from './DailyQuestList';
 import { DailyQuestDetail } from './DailyQuestDetail';
 import { Profile } from './Profile';
 import { Chat } from './Chat';
-import { Leaderboard } from './Leaderboard'; // NEW: Import the Leaderboard component
+import { Leaderboard } from './Leaderboard';
+import { AdminPanel } from './AdminPanel';
 
 function Dashboard() {
-    const { logout, message, isAuthenticated, authToken } = useAuth();
+    // NEW: Destructure userRole from useAuth
+    const { logout, message, isAuthenticated, authToken, userRole } = useAuth();
     const [activeTab, setActiveTab] = useState('questions');
     const [selectedQuestionId, setSelectedQuestionId] = useState(null);
     const [selectedChallengeId, setSelectedChallengeId] = useState(null);
     const [username, setUsername] = useState('Coder');
 
-    // Function to decode JWT and get username
+    // Function to decode JWT and get username (now also includes role for display logic)
     useEffect(() => {
         if (authToken) {
             try {
@@ -90,10 +92,16 @@ function Dashboard() {
         setActiveTab('chat');
     };
 
-    const handleViewLeaderboard = () => { // NEW: Handler for Leaderboard tab
+    const handleViewLeaderboard = () => {
         setSelectedQuestionId(null);
         setSelectedChallengeId(null);
         setActiveTab('leaderboard');
+    };
+
+    const handleViewAdminPanel = () => {
+        setSelectedQuestionId(null);
+        setSelectedChallengeId(null);
+        setActiveTab('adminPanel');
     };
 
     return (
@@ -206,6 +214,19 @@ function Dashboard() {
                 >
                     Leaderboard
                 </button>
+                {/* CONDITIONAL RENDERING FOR ADMIN PANEL */}
+                {userRole === 'admin' && (
+                    <button
+                        onClick={handleViewAdminPanel}
+                        className={`py-2 px-4 rounded-full font-semibold text-base transition duration-300 ease-in-out transform hover:scale-105
+                            ${activeTab === 'adminPanel'
+                                ? 'bg-blue-600 text-white shadow-lg'
+                                : 'bg-gray-200 text-blue-700 hover:bg-gray-300 shadow-md'
+                            }`}
+                    >
+                        Admin Panel
+                    </button>
+                )}
             </nav>
 
             {/* Main content area - now full width with padding */}
@@ -227,6 +248,7 @@ function Dashboard() {
                     {activeTab === 'profile' && <Profile />}
                     {activeTab === 'chat' && <Chat />}
                     {activeTab === 'leaderboard' && <Leaderboard />}
+                    {activeTab === 'adminPanel' && userRole === 'admin' && <AdminPanel />} {/* Render only if activeTab and userRole is admin */}
                 </div>
             </main>
 

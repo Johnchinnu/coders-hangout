@@ -9,7 +9,7 @@ const User = require('../models/User'); // Import the User model
 const jwtSecret = process.env.JWT_SECRET;
 if (!jwtSecret) {
     console.error('FATAL ERROR: JWT_SECRET is not defined in environment variables.');
-    process.exit(1);
+    process.exit(1); // Exit the process if secret is not defined
 }
 
 /**
@@ -37,7 +37,8 @@ router.post('/register', async (req, res) => {
         user = new User({
             username,
             email,
-            password // This will be hashed before saving
+            password,
+            role: 'user' // Default new users to 'user' role
         });
 
         // 4. Hash password
@@ -47,11 +48,12 @@ router.post('/register', async (req, res) => {
         // 5. Save user to database
         await user.save();
 
-        // 6. Create JWT payload - NEW: Include username in payload
+        // 6. Create JWT payload - NOW INCLUDING USERNAME AND ROLE
         const payload = {
             user: {
                 id: user.id,
-                username: user.username // Add username to the payload
+                username: user.username, // Include username
+                role: user.role // Include role
             }
         };
 
@@ -68,7 +70,7 @@ router.post('/register', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({ msg: 'Server Error during registration.' }); // Ensure JSON response
     }
 });
 
@@ -93,11 +95,12 @@ router.post('/login', async (req, res) => {
             return res.status(400).json({ msg: 'Invalid Credentials' });
         }
 
-        // 3. Create JWT payload - NEW: Include username in payload
+        // 3. Create JWT payload - NOW INCLUDING USERNAME AND ROLE
         const payload = {
             user: {
                 id: user.id,
-                username: user.username // Add username to the payload
+                username: user.username, // Include username
+                role: user.role // Include role
             }
         };
 
@@ -114,8 +117,29 @@ router.post('/login', async (req, res) => {
 
     } catch (err) {
         console.error(err.message);
-        res.status(500).send('Server Error');
+        res.status(500).json({ msg: 'Server Error during login.' }); // Ensure JSON response
     }
 });
+
+/**
+ * @route   GET /api/auth/me
+ * @desc    Get authenticated user's profile (for token validation/refresh)
+ * @access  Private
+ */
+const auth = require('../middleware/auth'); // Ensure auth middleware is imported here if not already
+router.get('/me', auth, async (req, res) => {
+    try {
+        // req.user is populated by the auth middleware
+        const user = await User.findById(req.user.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ msg: 'User not found' });
+        }
+        res.json(user);
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).json({ msg: 'Server Error' });
+    }
+});
+
 
 module.exports = router;

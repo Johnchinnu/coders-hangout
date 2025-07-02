@@ -23,7 +23,26 @@ const UserSchema = new mongoose.Schema({
         required: true,
         minlength: 6 // Minimum length for password
     },
-    // Existing fields to track upvotes by this user
+    // NEW: Role field for access control
+    role: {
+        type: String,
+        enum: ['user', 'admin'], // Restrict to 'user' or 'admin'
+        default: 'user' // Default role is 'user'
+    },
+    // Optional fields for Coders Hangout features
+    xp: {
+        type: Number,
+        default: 0
+    },
+    questsCompleted: {
+        type: Number,
+        default: 0
+    },
+    streak: {
+        type: Number,
+        default: 0
+    },
+    // New fields to track upvotes by this user
     upvotedQuestions: [
         {
             type: mongoose.Schema.Types.ObjectId,
@@ -36,26 +55,24 @@ const UserSchema = new mongoose.Schema({
             ref: 'Answer'
         }
     ],
-    // NEW: Fields for User Profile and Points System
-    points: { // For gamification/XP
-        type: Number,
-        default: 0
-    },
-    completedChallenges: [ // Store IDs of challenges user has completed
+    completedChallenges: [ // Track completed challenges by ID
         {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'Challenge'
         }
     ],
-    bio: { // User's personal description
+    points: { // Total points earned from challenges
+        type: Number,
+        default: 0
+    },
+    profilePicture: { // Optional profile picture URL
+        type: String,
+        default: '' // Can be a URL to an image hosting service or a default avatar
+    },
+    bio: { // Optional user biography
         type: String,
         trim: true,
-        maxlength: 500, // Max length for bio
-        default: ''
-    },
-    profilePicture: { // URL to a profile picture (e.g., Gravatar, hosted image)
-        type: String,
-        default: 'https://placehold.co/150x150/cccccc/ffffff?text=User' // Default placeholder image
+        maxlength: 500
     },
     joinedDate: {
         type: Date,

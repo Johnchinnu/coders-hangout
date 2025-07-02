@@ -10,6 +10,8 @@ export const AuthProvider = ({ children }) => {
     const [authToken, setAuthToken] = useState(localStorage.getItem('token'));
     // State to indicate if a user is logged in
     const [isAuthenticated, setIsAuthenticated] = useState(!!authToken);
+    // NEW: State to store user's role
+    const [userRole, setUserRole] = useState(null);
     // State for loading status (e.g., during API calls)
     const [loading, setLoading] = useState(false);
     // State for any authentication errors
@@ -20,13 +22,26 @@ export const AuthProvider = ({ children }) => {
     // Backend API URL
     const API_URL = 'http://localhost:5000/api/auth'; // Ensure this matches your backend URL
 
-    // Effect to update isAuthenticated when authToken changes
+    // Effect to update isAuthenticated and userRole when authToken changes
     useEffect(() => {
         setIsAuthenticated(!!authToken);
         if (authToken) {
             localStorage.setItem('token', authToken); // Persist token in local storage
+            try {
+                // Decode JWT to get user information including role
+                const decodedToken = JSON.parse(atob(authToken.split('.')[1]));
+                if (decodedToken && decodedToken.user && decodedToken.user.role) {
+                    setUserRole(decodedToken.user.role);
+                } else {
+                    setUserRole('user'); // Default to 'user' if role not found in token (for older tokens)
+                }
+            } catch (error) {
+                console.error("Failed to decode token:", error);
+                setUserRole('user'); // Fallback to 'user' on decode error
+            }
         } else {
             localStorage.removeItem('token'); // Remove token if it's null
+            setUserRole(null); // Clear role on logout
         }
     }, [authToken]);
 
@@ -100,6 +115,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setAuthToken(null);
         setIsAuthenticated(false);
+        setUserRole(null); // Clear role on logout
         setMessage('Logged out successfully.');
     };
 
@@ -107,14 +123,15 @@ export const AuthProvider = ({ children }) => {
     const authContextValue = {
         authToken,
         isAuthenticated,
+        userRole, // NEW: Expose userRole
         loading,
         error,
         message,
         register,
         login,
         logout,
-        setError, // Allow components to clear errors
-        setMessage // Allow components to clear messages
+        setError,
+        setMessage
     };
 
     return (
