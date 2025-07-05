@@ -1,5 +1,6 @@
 .App {
   text-align: center;
+  background-color: transparent;
 }
 
 .App-logo {
@@ -35,4 +36,8 @@
   to {
     transform: rotate(360deg);
   }
+}
+
+body {
+  background-color: #f3f4f6; /* Tailwind's gray-100 */
 }

@@ -5,9 +5,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
 
-code {
-  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
-    monospace;
+  /* Match Auth page background with wing image tones */
+  background: radial-gradient(circle at top left, #f9fafb, #dbeafe, #fcd34d, #d1d5db);
 }

@@ -1,44 +1,53 @@
 // coders-hangout/client/src/components/Dashboard.js
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '../context/AuthContext';
-import { QuestionList } from './QuestionList';
-import { AskQuestion } from './AskQuestion';
-import { QuestionDetail } from './QuestionDetail';
-import { CodeVisualizer } from './CodeVisualizer';
-import { DailyQuestList } from './DailyQuestList';
-import { DailyQuestDetail } from './DailyQuestDetail';
-import { Profile } from './Profile';
-import { Chat } from './Chat';
-import { Leaderboard } from './Leaderboard';
-import { AdminPanel } from './AdminPanel';
+import { useAuth } from '../context/AuthContext.js';
+import { QuestionList } from './QuestionList.js';
+import { AskQuestion } from './AskQuestion.js';
+import { QuestionDetail } from './QuestionDetail.js';
+import { CodeVisualizer } from './CodeVisualizer.js';
+import { DailyQuestList } from './DailyQuestList.js';
+import { DailyQuestDetail } from './DailyQuestDetail.js';
+import { Profile } from './Profile.js';
+import { Chat } from './Chat.js';
+import { Leaderboard } from './Leaderboard.js';
+import { AdminPanel } from './AdminPanel.js';
 
 function Dashboard() {
-    // NEW: Destructure userRole from useAuth
+    // Destructure userRole from useAuth to control admin panel visibility
     const { logout, message, isAuthenticated, authToken, userRole } = useAuth();
+    // State to manage the currently active tab in the dashboard
     const [activeTab, setActiveTab] = useState('questions');
+    // State to store the ID of the currently selected question for detail view
     const [selectedQuestionId, setSelectedQuestionId] = useState(null);
+    // State to store the ID of the currently selected challenge for detail view
     const [selectedChallengeId, setSelectedChallengeId] = useState(null);
+    // State to store the username for display in the header
     const [username, setUsername] = useState('Coder');
 
-    // Function to decode JWT and get username (now also includes role for display logic)
+    // Effect to decode JWT and extract username for display
     useEffect(() => {
         if (authToken) {
             try {
+                // Decode the base64 part of the JWT token
                 const decodedToken = JSON.parse(atob(authToken.split('.')[1]));
+                // Check if user and username exist in the decoded token
                 if (decodedToken && decodedToken.user && decodedToken.user.username) {
                     setUsername(decodedToken.user.username);
                 } else {
+                    // Fallback username if decoding fails or username is not found
                     setUsername('Fellow Coder');
                 }
             } catch (error) {
+                // Log any errors during token decoding
                 console.error("Failed to decode token:", error);
-                setUsername('Fellow Coder');
+                setUsername('Fellow Coder'); // Fallback on error
             }
         } else {
-            setUsername('Coder');
+            setUsername('Coder'); // Default if no auth token is present
         }
-    }, [authToken]);
+    }, [authToken]); // Re-run effect when authToken changes
 
+    // Function to render success messages
     const renderMessage = () => {
         if (message) {
             return (
@@ -48,9 +57,10 @@ function Dashboard() {
                 </div>
             );
         }
-        return null;
+        return null; // Don't render anything if no message
     };
 
+    // If not authenticated, display a login prompt
     if (!isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-gray-100 text-center">
@@ -59,6 +69,7 @@ function Dashboard() {
         );
     }
 
+    // Handlers for navigating between different sections/tabs
     const handleViewQuestion = (id) => {
         setSelectedQuestionId(id);
         setActiveTab('questionDetail');
@@ -66,7 +77,7 @@ function Dashboard() {
 
     const handleBackToList = () => {
         setSelectedQuestionId(null);
-        setSelectedChallengeId(null);
+        setSelectedChallengeId(null); // Clear challenge ID when going back to question list
         setActiveTab('questions');
     };
 
@@ -107,15 +118,23 @@ function Dashboard() {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col">
             {/* Enhanced Header/Navigation Bar */}
-            <header className="bg-gradient-to-r from-blue-900 to-blue-700 shadow-lg p-4 sm:p-6 mb-6 flex flex-col sm:flex-row justify-between items-center rounded-b-xl">
-                <div className="flex items-center mb-4 sm:mb-0">
-                    <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-wide">
+            {/*
+                Updated:
+                - Header `h-20` (fixed height) is retained.
+                - `items-center` on the header ensures vertical centering of its direct children.
+                - Inner divs now use `flex-grow` and `flex-shrink` to manage their space within the fixed height.
+                - Removed `py-2` from inner divs, relying on `items-center` on the parent header for vertical alignment.
+            */}
+            <header className="bg-gradient-to-r from-blue-900 to-blue-700 shadow-lg px-4 sm:px-6 mb-6 flex flex-col sm:flex-row justify-between items-center rounded-b-xl w-full h-20 flex-shrink-0">
+                {/* Title div: `flex-grow` allows it to take available space, `flex-shrink-0` prevents shrinking */}
+                <div className="flex items-center w-full sm:w-auto justify-center sm:justify-start flex-grow flex-shrink-0">
+                    <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-wide text-center sm:text-left">
                         Coders <span className="text-blue-300">Hangout</span>
                     </h1>
                 </div>
 
-                {/* User Actions (Logout and Hello message remain in header) */}
-                <div className="flex items-center">
+                {/* User Actions div: `flex-grow` allows it to take available space, `flex-shrink-0` prevents shrinking */}
+                <div className="flex items-center justify-center sm:justify-end w-full sm:w-auto flex-grow flex-shrink-0">
                     <span className="text-white text-sm sm:text-base mr-4 hidden md:block font-medium">Hello, {username}!</span>
                     <button
                         onClick={logout}
@@ -127,7 +146,7 @@ function Dashboard() {
             </header>
 
             {/* Separate Navigation Buttons below the header */}
-            <nav className="flex flex-wrap justify-center space-x-4 mb-6 px-4 sm:px-6 lg:px-8">
+            <nav className="flex flex-wrap justify-center gap-2 sm:gap-4 mb-6 px-4 sm:px-6 lg:px-8">
                 <button
                     onClick={() => {
                         setActiveTab('questions');
