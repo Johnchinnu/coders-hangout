@@ -4,7 +4,10 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "install-all": "npm install && cd ../client && npm install",
+    "build-client": "cd ../client && npm run build",
+    "dev": "npm run install-all && npm run build-client"
   },
   "keywords": [],
   "author": "",
