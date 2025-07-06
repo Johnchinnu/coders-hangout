@@ -35,10 +35,7 @@ mongoose.connect(mongoURI)
     .then(() => console.log('MongoDB connected successfully!'))
     .catch(err => console.error('MongoDB connection error:', err));
 
-// Basic API Route
-app.get('/', (req, res) => {
-    res.send('Coders Hangout Backend API is running!');
-});
+
 
 // Define Routes
 app.use('/api/auth', require('./routes/auth'));
