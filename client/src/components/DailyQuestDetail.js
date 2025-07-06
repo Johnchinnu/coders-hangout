@@ -15,7 +15,7 @@ function DailyQuestDetail({ challengeId, onBackToList }) {
     const [submitError, setSubmitError] = useState(null);
     const [submitSuccess, setSubmitSuccess] = useState(null);
 
-    const API_BASE_URL = 'http://localhost:5000/api/challenges';
+    const API_BASE_URL = 'https://coders-hangout-backend.onrender.com/api/challenges';
     // Removed EXECUTE_API_URL here as submission logic is now integrated into challenge submit route
 
     // Monaco Editor options

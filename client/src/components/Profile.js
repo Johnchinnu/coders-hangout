@@ -17,7 +17,7 @@ function Profile() {
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    const API_URL = 'http://localhost:5000/api/users/profile'; // Backend profile endpoint
+    const API_URL = 'https://coders-hangout-backend.onrender.com/api/users/profile'; // Backend profile endpoint
 
     // Function to fetch user profile data
     const fetchUserProfile = async () => {

@@ -19,7 +19,7 @@ function CodeVisualizer() {
     const [visualizationArray, setVisualizationArray] = useState([]); // The actual array used for visualization
     const [arrayInputError, setArrayInputError] = useState(null); // Error for array input
 
-    const EXECUTE_API_URL = 'http://localhost:5000/api/execute-code'; // Backend execution endpoint
+    const EXECUTE_API_URL = 'https://coders-hangout-backend.onrender.com/api/execute-code'; // Backend execution endpoint
 
     // Monaco Editor options
     const editorOptions = {

@@ -12,7 +12,7 @@ function QuestionDetail({ questionId, onBackToList }) {
     const [answerError, setAnswerError] = useState(null);
     const [answerMessage, setAnswerMessage] = useState(null);
 
-    const API_BASE_URL = 'http://localhost:5000/api/questions';
+    const API_BASE_URL = 'https://coders-hangout-backend.onrender.com/api/questions';
 
     // Function to fetch question details
     const fetchQuestionDetails = async () => {

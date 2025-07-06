@@ -10,7 +10,7 @@ function Chat() {
     const [inputMessage, setInputMessage] = useState('');
     const messagesEndRef = useRef(null); // Ref for scrolling to the latest message
 
-    const CHAT_SERVER_URL = 'http://localhost:5000'; // Your backend Socket.IO server URL
+    const CHAT_SERVER_URL = 'https://coders-hangout-backend.onrender.com'; // Your backend Socket.IO server URL
 
     // Effect to establish and manage Socket.IO connection
     useEffect(() => {

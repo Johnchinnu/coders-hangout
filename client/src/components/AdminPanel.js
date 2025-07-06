@@ -19,7 +19,7 @@ function AdminPanel() {
     const [submitError, setSubmitError] = useState(null);
     const [submitMessage, setSubmitMessage] = useState(null);
 
-    const API_URL = 'http://localhost:5000/api/challenges'; // Endpoint for creating challenges
+    const API_URL = 'https://coders-hangout-backend.onrender.com/api/challenges'; // Endpoint for creating challenges
 
     const handleSubmit = async (e) => {
         e.preventDefault();

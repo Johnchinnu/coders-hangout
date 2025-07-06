@@ -13,7 +13,7 @@ function DailyQuestList({ onViewChallenge }) {
     const [totalPages, setTotalPages] = useState(1);
     const [challengesPerPage, setChallengesPerPage] = useState(10); // Default items per page
 
-    const API_BASE_URL = 'http://localhost:5000/api/challenges';
+    const API_BASE_URL = 'https://coders-hangout-backend.onrender.com/api/challenges';
 
     // Memoized fetchChallenges function, now including pagination parameters
     const fetchChallenges = useCallback(async (page = 1, limit = 10) => {

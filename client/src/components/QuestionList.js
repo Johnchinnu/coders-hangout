@@ -21,7 +21,7 @@ function QuestionList({ onViewQuestion }) {
     const [totalPages, setTotalPages] = useState(1);
     const [questionsPerPage, setQuestionsPerPage] = useState(10); // Default items per page
 
-    const API_BASE_URL = 'http://localhost:5000/api/questions';
+    const API_BASE_URL = 'https://coders-hangout-backend.onrender.com/api/questions';
 
     // Debounce effect for searchTerm
     useEffect(() => {

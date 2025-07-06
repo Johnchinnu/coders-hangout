@@ -20,7 +20,7 @@ export const AuthProvider = ({ children }) => {
     const [message, setMessage] = useState(null);
 
     // Backend API URL
-    const API_URL = 'http://localhost:5000/api/auth'; // Ensure this matches your backend URL
+    const API_URL = 'https://coders-hangout-backend.onrender.com/api/auth'; // Ensure this matches your backend URL
 
     // Effect to update isAuthenticated and userRole when authToken changes
     useEffect(() => {

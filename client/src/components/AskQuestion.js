@@ -8,7 +8,7 @@ function AskQuestion({ onQuestionPosted }) {
     const [description, setDescription] = useState('');
     const [tags, setTags] = useState(''); // Comma-separated string of tags
 
-    const API_URL = 'http://localhost:5000/api/questions'; // Backend Q&A API endpoint
+    const API_URL = 'https://coders-hangout-backend.onrender.com/api/questions'; // Backend Q&A API endpoint
 
     const handleSubmit = async (e) => {
         e.preventDefault();

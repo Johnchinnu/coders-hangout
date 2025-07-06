@@ -8,7 +8,7 @@ function Leaderboard() {
     const [loading, setLoading] = useState(true);
     const [fetchError, setFetchError] = useState(null);
 
-    const API_URL = 'http://localhost:5000/api/users/leaderboard'; // Backend leaderboard endpoint
+    const API_URL = 'https://coders-hangout-backend.onrender.com/api/users/leaderboard'; // Backend leaderboard endpoint
 
     useEffect(() => {
         const fetchLeaderboard = async () => {
