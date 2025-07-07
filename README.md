@@ -12,8 +12,8 @@
 - 🛠 Built using **React**, **Node.js**, **Express**, **MongoDB**, and **WebSockets**
   
 💡 **Tech Stack**  
-- **Frontend**: React, Tailwind CSS, Axios  
-- **Backend**: Node.js, Express, MongoDB, Mongoose  
+- **Frontend**: React, Tailwind CSS, Axios
+- **Backend**: Node.js, Express, MongoDB, Mongoose
 - **Authentication**: JWT-based login system  
 - **Real-time Features**: Socket.io for instant updates  
 - **Dev Tools**: ESLint, Prettier, GitHub Actions (CI/CD ready)
@@ -23,16 +23,23 @@
 ## 🛠️ Getting Started
 
 1. Clone the repo:
-   ```bash
+
   . git clone https://github.com/Johnchinnu/coders-hangout.git
   . cd coders-hangout
+  
 2.Install dependencies:
+
   npm install
+  
 3.Setup .env:
+
   MONGO_URI
   JWT_SECRET
+  
 4.Run the app (dev):
+
   npm run dev
+  
 5.Open:https://coders-hangout.onrender.com/
 
 🤝 Contributing:
